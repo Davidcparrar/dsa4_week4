@@ -4,3 +4,4 @@ aggr.csv
 *.png
 *venv
 *.ipynb
+*.pem
