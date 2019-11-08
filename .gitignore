@@ -1,5 +1,5 @@
 aggr.csv
-*.txt
+credentials.txt
 *checkpoints*
 *.png
 *venv
