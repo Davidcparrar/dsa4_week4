@@ -5,8 +5,32 @@ import dash_html_components as html
 import plotly.graph_objects as go
 import dash_table
 import plotly.express as px
+import os
 
-df = pd.read_csv('aggr.csv', parse_dates=['Entry time'])
+from sqlalchemy import create_engine
+
+engine = create_engine(os.environ['SECRET_KEY'])
+df = pd.read_sql("SELECT * from trades", engine.connect(), parse_dates=('Entry time',))
+
+def get_width(exposure):
+
+    str_unique = exposure.replace('days','day')
+    str_unique = str_unique.replace('hours','hour')
+    str_unique = str_unique.replace('minutes','minute')
+    str_unique = str_unique.split()
+
+    width =  0
+    day = [i for i, x in enumerate(str_unique) if x == 'day']
+    if len(day) > 0:
+        width = width + 1000*3600*24*int(str_unique[day[0]-1])
+    hour = [i for i, x in enumerate(str_unique) if x == 'hour']
+    if len(hour) > 0:
+        width = width + 1000*3600*int(str_unique[hour[0]-1])
+    minute = [i for i, x in enumerate(str_unique) if x == 'minute']
+    if len(minute) > 0:
+        width = width + 1000*60*int(str_unique[minute[0]-1])
+
+    return width
 
 def filter_df(df,exchange=None,margin=None,start_date=None,end_date=None):
 
@@ -271,22 +295,19 @@ def update_table(exchange, leverage, start_date, end_date):
 )
 def update_bar(exchange, leverage, start_date, end_date):
     dff = filter_df(df, exchange, leverage, start_date, end_date)
-
     dff_piv = pd.pivot_table(dff, columns=['Trade type'], index=['Entry time'], values=['Pnl (incl fees)']).droplevel([0], axis=1)
     dff_piv.fillna(0,inplace=True)
 
-    width = 1000*3600*24*3
-
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=dff_piv.index, y=dff_piv['Long'],
-                    marker_color='salmon',
-                    name='Long',
-                    width=width
-                    ))
-    fig.add_trace(go.Bar(x=dff_piv.index, y=dff_piv['Short'],
+    fig.add_trace(go.Bar(x=dff[dff['Trade type'] == 'Long']['Entry time'], y=dff[dff['Trade type'] == 'Long']['Pnl (incl fees)'],
+                        marker_color='salmon',
+                        name='Long',
+                        width=dff[dff['Trade type'] == 'Long']['Exposure'].apply(get_width)
+                        ))
+    fig.add_trace(go.Bar(x=dff[dff['Trade type'] == 'Short']['Entry time'], y=dff[dff['Trade type'] == 'Short']['Pnl (incl fees)'],
                     marker_color='black',
                     name='Short',
-                    width=width
+                    width=dff[dff['Trade type'] == 'Short']['Exposure'].apply(get_width)
                     ))
     fig.update_layout(title={'text':'PnL vs Trade type', 'x':0.5}, height=450, template='plotly_white')
 

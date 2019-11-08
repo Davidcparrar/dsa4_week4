@@ -1,3 +1,5 @@
 aggr.csv
 *.txt
 *checkpoints*
+*.png
+*venv
