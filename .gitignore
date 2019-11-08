@@ -3,3 +3,4 @@ aggr.csv
 *checkpoints*
 *.png
 *venv
+*.ipynb
