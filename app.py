@@ -275,8 +275,55 @@ def update_bar(exchange, leverage, start_date, end_date):
     dff_piv = pd.pivot_table(dff, columns=['Trade type'], index=['Entry time'], values=['Pnl (incl fees)']).droplevel([0], axis=1)
     dff_piv.fillna(0,inplace=True)
 
-    fig = px.bar(dff, x='Entry time', y='Pnl (incl fees)', color='Trade type', barmode='group',
-             height=600)
+    width = 1000*3600*24*3
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=dff_piv.index, y=dff_piv['Long'],
+                    marker_color='salmon',
+                    name='Long',
+                    width=width
+                    ))
+    fig.add_trace(go.Bar(x=dff_piv.index, y=dff_piv['Short'],
+                    marker_color='black',
+                    name='Short',
+                    width=width
+                    ))
+    fig.update_layout(title={'text':'PnL vs Trade type', 'x':0.5}, height=450, template='plotly_white')
+
+    return fig
+
+@app.callback(
+    dash.dependencies.Output('daily-btc','figure'),
+    (
+        dash.dependencies.Input('exchange-select', 'value'),
+        dash.dependencies.Input('leverage-select', 'value'),
+        dash.dependencies.Input('date-range', 'start_date'),
+        dash.dependencies.Input('date-range', 'end_date'),
+    )
+)
+def update_BTC(exchange, leverage, start_date, end_date):
+    dff = filter_df(df, exchange, leverage, start_date, end_date)
+
+    fig = px.line(dff, x="Entry time", y="BTC Price", title='Daily BTC Price', template='plotly_white')
+    fig.update_layout(title={'x':0.5})
+
+    return fig
+
+@app.callback(
+    dash.dependencies.Output('balance','figure'),
+    (
+        dash.dependencies.Input('exchange-select', 'value'),
+        dash.dependencies.Input('leverage-select', 'value'),
+        dash.dependencies.Input('date-range', 'start_date'),
+        dash.dependencies.Input('date-range', 'end_date'),
+    )
+)
+def update_balance(exchange, leverage, start_date, end_date):
+    dff = filter_df(df, exchange, leverage, start_date, end_date)
+    dff.columns
+    fig = px.line(dff, x="Entry time", y="Exit balance", title='Balance over time', template='plotly_white')
+    fig.update_layout(title={'x':0.5})
+
     return fig
 
 if __name__ == "__main__":
